@@ -1,0 +1,56 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net472</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <AssemblyName>M4A1Fix</AssemblyName>
+    <RootNamespace>M4A1Fix</RootNamespace>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+    <Optimize>true</Optimize>
+    <DebugType>portable</DebugType>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+
+    <GamePath Condition="'$(GamePath)' == '' and '$(M4A1FIX_GAME_PATH)' != ''">$(M4A1FIX_GAME_PATH)</GamePath>
+    <GamePath Condition="'$(GamePath)' == ''">E:\SteamLibrary\steamapps\common\Risk of Rain 2</GamePath>
+    <ManagedPath>$(GamePath)\Risk of Rain 2_Data\Managed</ManagedPath>
+
+    <M4A1ModPath Condition="'$(M4A1ModPath)' == '' and '$(M4A1FIX_M4A1_PATH)' != ''">$(M4A1FIX_M4A1_PATH)</M4A1ModPath>
+    <BepInExCorePath Condition="'$(BepInExCorePath)' == '' and Exists('$(GamePath)\BepInEx\core\BepInEx.dll')">$(GamePath)\BepInEx\core</BepInExCorePath>
+    <BepInExDllPath Condition="'$(BepInExDllPath)' == '' and '$(BepInExCorePath)' != ''">$(BepInExCorePath)\BepInEx.dll</BepInExDllPath>
+    <HarmonyDllPath Condition="'$(HarmonyDllPath)' == '' and '$(BepInExCorePath)' != ''">$(BepInExCorePath)\0Harmony.dll</HarmonyDllPath>
+    <HlapiRuntimePath Condition="'$(HlapiRuntimePath)' == ''">$(ManagedPath)\com.unity.multiplayer-hlapi.Runtime.dll</HlapiRuntimePath>
+    <NetworkingAssemblyPath Condition="'$(NetworkingAssemblyPath)' == '' and Exists('$(ManagedPath)\UnityEngine.Networking.dll')">$(ManagedPath)\UnityEngine.Networking.dll</NetworkingAssemblyPath>
+    <NetworkingReferenceName Condition="'$(NetworkingReferenceName)' == '' and Exists('$(ManagedPath)\UnityEngine.Networking.dll')">UnityEngine.Networking</NetworkingReferenceName>
+    <NetworkingAssemblyPath Condition="'$(NetworkingAssemblyPath)' == '' and Exists('$(ManagedPath)\UnityEngine.UNETModule.dll')">$(ManagedPath)\UnityEngine.UNETModule.dll</NetworkingAssemblyPath>
+    <NetworkingReferenceName Condition="'$(NetworkingReferenceName)' == '' and Exists('$(ManagedPath)\UnityEngine.UNETModule.dll')">UnityEngine.UNETModule</NetworkingReferenceName>
+  </PropertyGroup>
+
+  <Target Name="ValidateLocalReferences" BeforeTargets="ResolveReferences">
+    <Error Condition="!Exists('$(BepInExDllPath)')" Text="BepInEx reference not found: $(BepInExDllPath)" />
+    <Error Condition="!Exists('$(HarmonyDllPath)')" Text="Harmony reference not found: $(HarmonyDllPath)" />
+    <Error Condition="!Exists('$(ManagedPath)\Assembly-CSharp.dll')" Text="Assembly-CSharp reference not found under $(ManagedPath)" />
+    <Error Condition="!Exists('$(ManagedPath)\RoR2.dll')" Text="RoR2 reference not found under $(ManagedPath)" />
+    <Error Condition="!Exists('$(ManagedPath)\UnityEngine.dll')" Text="UnityEngine reference not found under $(ManagedPath)" />
+    <Error Condition="!Exists('$(ManagedPath)\UnityEngine.CoreModule.dll')" Text="UnityEngine.CoreModule reference not found under $(ManagedPath)" />
+    <Error Condition="!Exists('$(HlapiRuntimePath)')" Text="HLAPI runtime reference not found: $(HlapiRuntimePath)" />
+    <Error Condition="'$(NetworkingAssemblyPath)' == '' or !Exists('$(NetworkingAssemblyPath)')" Text="Unity networking reference could not be resolved under $(ManagedPath)" />
+    <Error Condition="'$(M4A1ModPath)' == '' or !Exists('$(M4A1ModPath)')" Text="Set M4A1ModPath or M4A1FIX_M4A1_PATH to the exact local M4A1Mod.dll 1.1.4 file." />
+  </Target>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies.net472" Version="1.0.3" PrivateAssets="All" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="BepInEx"><HintPath>$(BepInExDllPath)</HintPath><Private>false</Private></Reference>
+    <Reference Include="0Harmony"><HintPath>$(HarmonyDllPath)</HintPath><Private>false</Private></Reference>
+    <Reference Include="Assembly-CSharp"><HintPath>$(ManagedPath)\Assembly-CSharp.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="RoR2"><HintPath>$(ManagedPath)\RoR2.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="UnityEngine"><HintPath>$(ManagedPath)\UnityEngine.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="UnityEngine.CoreModule"><HintPath>$(ManagedPath)\UnityEngine.CoreModule.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="$(NetworkingReferenceName)"><HintPath>$(NetworkingAssemblyPath)</HintPath><Private>false</Private></Reference>
+    <Reference Include="com.unity.multiplayer-hlapi.Runtime"><HintPath>$(HlapiRuntimePath)</HintPath><Private>false</Private></Reference>
+    <Reference Include="M4A1Mod"><HintPath>$(M4A1ModPath)</HintPath><Private>false</Private></Reference>
+  </ItemGroup>
+</Project>
