@@ -1,50 +1,99 @@
 # M4A1Fix
 
-**M4A1Fix 1.0.0** is an independent Risk of Rain 2 compatibility/fix plugin for Snoresville's M4A1 mod.
-It is not the M4A1 mod and does not redistribute M4A1 or game binaries.
+**M4A1Fix** is a small compatibility/fix plugin for the **M4A1** mod in Risk of Rain 2.
+
+It fixes an issue in M4A1's death and revival handling where multiple available revival sources could be consumed by a single death.
+
+The fix is intended for **M4A1Mod 1.1.4**.
 
 ## What it fixes
 
-M4A1Fix contains two narrowly scoped fixes:
+In the affected M4A1 version, dying while multiple revival sources were available could cause more than one of them to be consumed at the same time.
 
-1. **Shrine of Shaping revive priority** — when M4A1 dies while the Shrine of Shaping extra-life buff is pending, the M4A1 death hook delegates that case back to the game's normal revive path before Dummy Link handling. This preserves the validated Shrine-before-other-revive-resource behavior.
-2. **Dummy AI recovery after Shrine revival** — after a successful Shrine of Shaping revival of the exact `M4A1Body`, the server reassigns M4A1 dummy leader links so the dummies resume following and fighting instead of remaining tied to stale death-state AI.
+For example, if M4A1 had:
 
-## Supported dependency
+- the **Shrine of Shaping** extra-life effect;
+- a **Dummy Link**;
+- a revival item;
 
-The validated dependency is **M4A1Mod 1.1.4** with exact DLL SHA-256:
+a single death could consume multiple revival sources even though only one was needed.
 
-`600188D306782F6C1B26EA1BDA4A615BFF9AC4437318873D5728CD58B26A7154`
+**M4A1Fix** corrects the revival priority and consumption behavior.
 
-The plugin intentionally fails closed when the exact compatibility contract does not match.
+Now:
+
+- if the Shrine of Shaping extra life is available, that revival is used;
+- Dummy Link is not consumed at the same time;
+- revival items are not consumed together with it;
+- when Dummy Link is used for revival, other revival items should not be consumed unnecessarily;
+- one death should consume only the revival source that is actually used.
+
+## Compatibility
+
+M4A1Fix 1.0.0 is intended for:
+
+- **Risk of Rain 2**
+- **BepInEx**
+- **M4A1Mod 1.1.4**
+- **M4A1Fix 1.0.0**
+
+This fix was created for M4A1Mod 1.1.4, where the issue described above is present.
+
+A future M4A1 update may change or fix the affected revival behavior. In that case, M4A1Fix may no longer be required or may need an update.
 
 ## Installation
 
-1. Install Risk of Rain 2 with BepInEx and the supported M4A1Mod 1.1.4.
-2. Build or obtain `M4A1Fix.dll` 1.0.0.
-3. Place **only the single `M4A1Fix.dll`** in a BepInEx plugin folder, for example `BepInEx\plugins\M4A1Fix\`.
-4. Start the game normally.
+1. Install **BepInEx**.
+2. Install **M4A1Mod 1.1.4**.
+3. Download the M4A1Fix release archive.
+4. Extract the included `M4A1Fix` folder into:
 
-Normal startup should report one `M4A1Fix 1.0.0` plugin and one installed runtime DLL.
+   `BepInEx\plugins\`
 
-## Compatibility and fail-closed behavior
+The final installation should look like this:
 
-The revive-priority patch validates the exact supported M4A1 assembly, the exact M4A1 death-hook IL, and the relevant Risk of Rain 2 revive methods before modifying anything. If that validation fails, the revive-priority patch is not left installed.
+`BepInEx\plugins\M4A1Fix\M4A1Fix.dll`
 
-Shrine AI recovery is installed only after the revive-priority patch is confirmed healthy on the exact M4A1 death target and the loaded M4A1 plugin bytes match the supported hash. Failure of Shrine AI recovery does **not** remove an otherwise healthy revive-priority patch.
+5. Start the game normally.
 
-The Shrine AI recovery path is server-side, is restricted to the exact `M4A1Body`, and performs one bounded repair call:
+## Testing status
 
-`M4A1Mod.Survivors.M4A1.Utils.M4A1.ReassignDummyLinks(revivedBody)`
+**M4A1Fix 1.0.0** has been tested in single-player.
 
-It does not call M4A1's full revive helper and does not alter revive resources, inventory, skill stocks, deployables, spawn logic, or RPC synchronization.
+The corrected death and revival behavior works correctly in the tested scenarios.
+
+### Multiplayer
+
+Dedicated multiplayer runtime testing has not yet been completed for version 1.0.0.
+
+This does not indicate a known multiplayer issue; multiplayer behavior is simply not yet independently validated.
+
+## Source code
+
+The source code for M4A1Fix is public.
+
+This project is a small fix for a specific issue in M4A1, so the code may be studied, modified, or reused under the terms of the MIT License.
+
+If the original M4A1 developer wants to integrate this fix, or parts of it, directly into M4A1, that is fully welcome.
+
+The goal of this project is to fix the issue, not to maintain a competing implementation of the same mechanic.
 
 ## Building
 
-See [BUILDING.md](BUILDING.md). The repository does not contain Risk of Rain 2, Unity, BepInEx, Harmony, or M4A1 binaries.
+The repository contains the source code and files required to build M4A1Fix locally.
+
+See [BUILDING.md](BUILDING.md) for build instructions.
+
+For convenience, the repository also includes `BUILD.cmd` for local builds.
+
+## AI-assisted development
+
+AI tools were used during development to assist with code analysis, implementation support, test workflow organization, and documentation.
+
+Final runtime validation and release decisions were performed by the project owner.
 
 ## License
 
-M4A1Fix source code is licensed under the [MIT License](LICENSE).
+The M4A1Fix source code is licensed under the **MIT License**.
 
-The MIT License applies to M4A1Fix source code. It does not automatically relicense Risk of Rain 2, BepInEx, Harmony, the upstream M4A1 mod, or upstream M4A1 artwork used as the visual basis for the release icon. See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for third-party ownership and provenance notes.
+See [LICENSE](LICENSE).
