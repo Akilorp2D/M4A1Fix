@@ -1,0 +1,10 @@
+{
+  "name": "M4A1Fix",
+  "version_number": "1.0.0",
+  "website_url": "https://github.com/Akilorp2D/M4A1Fix",
+  "description": "Fixes M4A1Mod 1.1.4 revival priority so a single death does not consume multiple revival sources.",
+  "dependencies": [
+    "bbepis-BepInExPack-5.4.2121",
+    "Snoresville-M4A1-1.1.4"
+  ]
+}
