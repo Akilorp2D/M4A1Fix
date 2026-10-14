@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net472</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <IsTestProject>true</IsTestProject>
+    <IsPackable>false</IsPackable>
+    <GamePath Condition="'$(GamePath)' == '' and '$(M4A1FIX_GAME_PATH)' != ''">$(M4A1FIX_GAME_PATH)</GamePath>
+    <ManagedPath>$(GamePath)\Risk of Rain 2_Data\Managed</ManagedPath>
+    <BaselineArchivePath>$(MSBuildProjectDirectory)\..\..\..\BASELINE_REFERENCE_DO_NOT_COMMIT\M4A1Fix-1.0.1-Thunderstore.zip</BaselineArchivePath>
+    <HookAssemblyPath Condition="'$(HookAssemblyPath)' == '' and '$(HarmonyDllPath)' != ''">$([System.IO.Path]::GetFullPath($([System.IO.Path]::Combine($([System.IO.Path]::GetDirectoryName('$(HarmonyDllPath)')), '..', 'plugins', 'MMHOOK', 'MMHOOK_RoR2.dll'))))</HookAssemblyPath>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies.net472" Version="1.0.3" PrivateAssets="All" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <PackageReference Include="MSTest.TestAdapter" Version="3.6.4" />
+    <PackageReference Include="MSTest.TestFramework" Version="3.6.4" />
+    <ProjectReference Include="..\..\src\M4A1Fix\M4A1Fix.csproj" />
+    <Reference Include="0Harmony"><HintPath>$(HarmonyDllPath)</HintPath></Reference>
+    <Reference Include="BepInEx"><HintPath>$(BepInExDllPath)</HintPath></Reference>
+    <Reference Include="RoR2"><HintPath>$(ManagedPath)\RoR2.dll</HintPath></Reference>
+    <Reference Include="UnityEngine"><HintPath>$(ManagedPath)\UnityEngine.dll</HintPath></Reference>
+    <Reference Include="UnityEngine.CoreModule"><HintPath>$(ManagedPath)\UnityEngine.CoreModule.dll</HintPath></Reference>
+    <Reference Include="M4A1Mod"><HintPath>$(M4A1ModPath)</HintPath></Reference>
+    <Reference Include="System.IO.Compression" />
+    <Reference Include="System.IO.Compression.FileSystem" />
+    <None Include="$(BaselineArchivePath)" Link="baseline.zip" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="$(HookAssemblyPath)" Condition="Exists('$(HookAssemblyPath)')" Link="MMHOOK_RoR2.dll" CopyToOutputDirectory="PreserveNewest" />
+    <AssemblyMetadata Include="ManagedPath" Value="$(ManagedPath)" />
+    <AssemblyMetadata Include="CorePath" Value="$([System.IO.Path]::GetDirectoryName('$(HarmonyDllPath)'))" />
+  </ItemGroup>
+</Project>

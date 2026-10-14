@@ -1,0 +1,87 @@
+<Project>
+  <PropertyGroup>
+    <ArtifactDirectory Condition="'$(ArtifactDirectory)' == ''">$([System.IO.Path]::GetFullPath('$(MSBuildProjectDirectory)\..\..\artifacts'))</ArtifactDirectory>
+    <_M4A1FixArtifact>$(ArtifactDirectory)\M4A1Fix.dll</_M4A1FixArtifact>
+    <_M4A1FixStagedArtifact>$(_M4A1FixArtifact).pending</_M4A1FixStagedArtifact>
+  </PropertyGroup>
+
+  <Target Name="ValidateLocalReferences" BeforeTargets="ResolveReferences">
+    <Error Condition="'$(GamePath)' == ''" Text="Set GamePath or M4A1FIX_GAME_PATH to your local Risk of Rain 2 installation." />
+    <Error Condition="!Exists('$(BepInExDllPath)')" Text="BepInEx reference not found: $(BepInExDllPath)" />
+    <Error Condition="!Exists('$(HarmonyDllPath)')" Text="Harmony reference not found: $(HarmonyDllPath)" />
+    <PropertyGroup>
+      <_M4A1FixBepDirectory>$([System.IO.Path]::GetDirectoryName('$(BepInExDllPath)'))</_M4A1FixBepDirectory>
+      <_M4A1FixHarmonyDirectory>$([System.IO.Path]::GetDirectoryName('$(HarmonyDllPath)'))</_M4A1FixHarmonyDirectory>
+      <_M4A1FixBepDirectory>$([System.IO.Path]::GetFullPath('$(_M4A1FixBepDirectory)'))</_M4A1FixBepDirectory>
+      <_M4A1FixHarmonyDirectory>$([System.IO.Path]::GetFullPath('$(_M4A1FixHarmonyDirectory)'))</_M4A1FixHarmonyDirectory>
+    </PropertyGroup>
+    <Error Condition="'$(_M4A1FixBepDirectory)' != '$(_M4A1FixHarmonyDirectory)'" Text="BepInEx.dll and 0Harmony.dll must come from the same selected core directory." />
+    <Error Condition="!Exists('$(ManagedPath)\Assembly-CSharp.dll')" Text="Assembly-CSharp reference not found under $(ManagedPath)" />
+    <Error Condition="!Exists('$(ManagedPath)\RoR2.dll')" Text="RoR2 reference not found under $(ManagedPath)" />
+    <Error Condition="!Exists('$(ManagedPath)\UnityEngine.dll')" Text="UnityEngine reference not found under $(ManagedPath)" />
+    <Error Condition="!Exists('$(ManagedPath)\UnityEngine.CoreModule.dll')" Text="UnityEngine.CoreModule reference not found under $(ManagedPath)" />
+    <Error Condition="!Exists('$(ManagedPath)\Unity.Addressables.dll')" Text="Unity.Addressables reference not found under $(ManagedPath)" />
+    <Error Condition="!Exists('$(ManagedPath)\Unity.ResourceManager.dll')" Text="Unity.ResourceManager reference not found under $(ManagedPath)" />
+    <Error Condition="!Exists('$(HlapiRuntimePath)')" Text="HLAPI runtime reference not found: $(HlapiRuntimePath)" />
+    <Error Condition="'$(NetworkingAssemblyPath)' == '' or !Exists('$(NetworkingAssemblyPath)')" Text="Unity networking reference could not be resolved under $(ManagedPath)" />
+    <Error Condition="'$(M4A1ModPath)' == '' or !Exists('$(M4A1ModPath)')" Text="Set M4A1ModPath or M4A1FIX_M4A1_PATH to the exact local M4A1Mod.dll 1.1.4 or 1.1.5 file." />
+    <GetFileHash Files="$(M4A1ModPath)" Algorithm="SHA256" MetadataName="VerifiedSha256">
+      <Output TaskParameter="Items" ItemName="_M4A1FixUpstream" />
+    </GetFileHash>
+    <Error Condition="'%(_M4A1FixUpstream.VerifiedSha256)' != '600188D306782F6C1B26EA1BDA4A615BFF9AC4437318873D5728CD58B26A7154' and '%(_M4A1FixUpstream.VerifiedSha256)' != '023B3FE8F86F9DCE8FD9F203BA3580D565A9940D2E0E82AB3FA129EDC33CC6F0'" Text="M4A1Mod.dll SHA-256 mismatch. Exact verified M4A1 1.1.4 or 1.1.5 is required; actual %(_M4A1FixUpstream.VerifiedSha256)." />
+  </Target>
+
+  <!-- Same-directory atomic replacement preserves the previous DLL on failure. -->
+  <UsingTask TaskName="M4A1FixReplaceArtifact" TaskFactory="RoslynCodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.Core.dll">
+    <ParameterGroup>
+      <StagedFile ParameterType="System.String" Required="true" />
+      <Destination ParameterType="System.String" Required="true" />
+    </ParameterGroup>
+    <Task>
+      <Using Namespace="System" />
+      <Using Namespace="System.IO" />
+      <Code Type="Fragment" Language="cs"><![CDATA[
+        try
+        {
+            if (File.Exists(Destination))
+                File.Replace(StagedFile, Destination, null);
+            else
+                File.Move(StagedFile, Destination);
+        }
+        catch (Exception error)
+        {
+            Log.LogErrorFromException(error, true);
+        }
+      ]]></Code>
+    </Task>
+  </UsingTask>
+
+  <Target Name="PrepareM4A1FixArtifact" AfterTargets="CopyFilesToOutputDirectory" Condition="'$(Configuration)' == 'Release' and '$(DesignTimeBuild)' != 'true'">
+    <Error Condition="$([System.IO.Directory]::Exists('$(_M4A1FixArtifact)'))" Text="Candidate DLL path is occupied by a directory." />
+    <Error Condition="$([System.IO.Directory]::Exists('$(_M4A1FixStagedArtifact)'))" Text="Staging path is occupied by a directory." />
+    <GetFileHash Files="$(TargetPath)" Algorithm="SHA256" MetadataName="VerifiedSha256">
+      <Output TaskParameter="Items" ItemName="_M4A1FixSource" />
+    </GetFileHash>
+    <MakeDir Directories="$(ArtifactDirectory)" />
+    <Copy SourceFiles="$(TargetPath)" DestinationFiles="$(_M4A1FixStagedArtifact)" />
+    <GetFileHash Files="$(_M4A1FixStagedArtifact)" Algorithm="SHA256" MetadataName="VerifiedSha256">
+      <Output TaskParameter="Items" ItemName="_M4A1FixStage" />
+    </GetFileHash>
+    <Error Condition="'@(_M4A1FixSource->'%(VerifiedSha256)')' != '@(_M4A1FixStage->'%(VerifiedSha256)')'" Text="Staged DLL SHA-256 mismatch; previous candidate has not been replaced." />
+    <M4A1FixReplaceArtifact StagedFile="$(_M4A1FixStagedArtifact)" Destination="$(_M4A1FixArtifact)" />
+    <GetFileHash Files="$(_M4A1FixArtifact)" Algorithm="SHA256" MetadataName="VerifiedSha256">
+      <Output TaskParameter="Items" ItemName="_M4A1FixCandidate" />
+    </GetFileHash>
+    <Error Condition="'@(_M4A1FixCandidate->'%(VerifiedSha256)')' != '@(_M4A1FixSource->'%(VerifiedSha256)')'" Text="Final candidate SHA-256 mismatch; output is not accepted." />
+    <ItemGroup>
+      <FileWrites Include="$(_M4A1FixArtifact);$(_M4A1FixStagedArtifact)" />
+    </ItemGroup>
+    <Message Importance="High" Text="M4A1Fix candidate: $(_M4A1FixArtifact)" />
+    <Message Importance="High" Text="M4A1Fix candidate SHA-256: %(_M4A1FixCandidate.VerifiedSha256)" />
+    <OnError ExecuteTargets="CleanupM4A1FixStagedArtifact" />
+  </Target>
+
+  <Target Name="CleanupM4A1FixStagedArtifact">
+    <Delete Files="$(_M4A1FixStagedArtifact)" Condition="Exists('$(_M4A1FixStagedArtifact)') and !$([System.IO.Directory]::Exists('$(_M4A1FixStagedArtifact)'))" />
+  </Target>
+</Project>

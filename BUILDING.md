@@ -1,142 +1,55 @@
-# Building M4A1Fix 1.0.0
+# Building and testing M4A1Fix
 
-## Requirements
+## Prerequisites
 
-- Windows with a .NET SDK providing `dotnet` and access to NuGet restore.
-- A local Risk of Rain 2 installation.
-- BepInEx 5 core files from the exact installation/profile you choose to build against.
-- The exact supported M4A1Mod 1.1.4 DLL.
+- Windows, a .NET SDK with MSBuild/RoslynCodeTaskFactory, and NuGet restore access or populated package caches.
+- Your own Risk of Rain 2 installation with its Managed assemblies, including Unity.Addressables.dll and Unity.ResourceManager.dll.
+- BepInEx 5 and 0Harmony from the same selected installation/profile core.
+- Exact M4A1 1.1.5 DLL. Its expected SHA-256 and supported game image are in [compatibility](docs/COMPATIBILITY.md).
+- The private compile-time package Microsoft.NETFramework.ReferenceAssemblies.net472 1.0.3. Do not add the game's mscorlib/netstandard facades as replacements.
 
-No game, M4A1, BepInEx, Harmony, or other third-party DLL is committed to this repository. Build references are resolved from paths you explicitly select on your machine.
+## Compile from CMD
 
-## Compile framework strategy
-
-M4A1Fix targets **.NET Framework 4.7.2 (`net472`)** for compilation. The project pins the compile-only NuGet package:
-
-```text
-Microsoft.NETFramework.ReferenceAssemblies.net472 1.0.3
-```
-
-The package is marked `PrivateAssets=All`; it is used only to supply a coherent .NET Framework 4.7.2 reference assembly set to the compiler. It is **not** copied into the mod output and is not a runtime dependency. Restored NuGet packages are not committed to this repository.
-
-This is intentional. The selected Risk of Rain 2/BepInEx/Harmony runtime used by this project exposes Harmony `CodeInstruction` branch labels through the classic `mscorlib` framework identity. Compiling the same source as SDK `netstandard2.1` caused `System.Reflection.Emit.Label` to be seen simultaneously through incompatible `netstandard.dll` and `mscorlib.dll` identities. Targeting `net472` makes the compiler use one .NET Framework identity for `Label` while keeping all game/mod runtime assemblies as external API references.
-
-**Do not add `mscorlib.dll`, `netstandard.dll`, or other framework facade assemblies from the game directory as manual `<Reference>` items.** The framework reference set comes only from the pinned `net472` reference-assemblies package; game/BepInEx/Harmony/M4A1 assemblies remain explicit external references.
-
-A normal `dotnet build` performs NuGet restore automatically. If restore access is restricted, restore the pinned package from an approved NuGet cache/source before building.
-
-## Build command contract
-
-Run from a normal **Command Prompt** in the repository root:
+At the extracted source root, set these variables to your own files. The angle-bracket placeholders must be replaced before execution; no installation or profile is selected automatically.
 
 ```cmd
-BUILD.cmd [GamePath] [M4A1Mod.dll] [BepInExCorePath-or-BepInEx.dll]
+set "M4A1FIX_GAME_PATH=<your Risk of Rain 2 installation directory>"
+set "M4A1FIX_M4A1_PATH=<full path to your M4A1Mod.dll>"
+set "M4A1FIX_BEPINEX_CORE=<your selected BepInEx core directory>"
+dotnet build src\M4A1Fix\M4A1Fix.csproj -c Release
 ```
 
-Arguments:
+The target stays net472. Native `build/M4A1Fix.Build.targets` validates required files and the upstream hash, stages output and atomically prepares `artifacts/M4A1Fix.dll`. Failed validation or locked files do not silently replace the previous candidate. Runtime loaded-method/game compatibility is checked separately by the plugin.
 
-1. `GamePath` — Risk of Rain 2 game root. This supplies the game's managed assemblies only.
-2. `M4A1Mod.dll` — exact supported M4A1Mod 1.1.4 DLL.
-3. `BepInExCorePath-or-BepInEx.dll` — either the selected profile's `BepInEx\core` directory or that directory's `BepInEx.dll`.
+Explicit properties override environment variables: GamePath, M4A1ModPath, BepInExCorePath, BepInExDllPath and HarmonyDllPath. Other overrides are HlapiRuntimePath, NetworkingAssemblyPath and NetworkingReferenceName. GamePath and the selected profile core are independent. Production third-party references use Private=false and are not bundled.
 
-The BepInEx selection must provide both `BepInEx.dll` and `0Harmony.dll` in the same core directory.
+## C# regression tests
 
-The script does **not** scan for or auto-select Gale/r2modman profiles.
+The test project uses MSTest/VSTest on net472. It requires the same real dependencies plus the generated MMHOOK_RoR2.dll from the selected profile and a separate frozen M4A1Fix 1.0.1 Thunderstore package for equivalence tests. Neither is an internal instruction/report; both are external test data and must be supplied explicitly. No Skill, agent configuration or QA document is needed.
 
-Environment-variable equivalents:
-
-- `M4A1FIX_GAME_PATH`
-- `M4A1FIX_M4A1_PATH`
-- `M4A1FIX_BEPINEX_CORE`
-
-`M4A1FIX_BEPINEX_CORE` may point either to the selected `BepInEx\core` directory or directly to its `BepInEx.dll`.
-
-If no BepInEx argument/environment variable is supplied, the script uses `<GamePath>\BepInEx\core` only when a direct-install BepInEx actually exists there.
-
-The default game path, when no first argument or environment variable is supplied, is:
-
-```text
-E:\SteamLibrary\steamapps\common\Risk of Rain 2
-```
-
-## Direct-install example
-
-For a game installation where BepInEx and M4A1 are installed directly below the game root:
+The frozen package must contain `plugins/M4A1Fix/M4A1Fix.dll` with SHA-256 `70D19CB9D57DFC06AF3E9B7AFF98291B5E7EFEE34ED2A07FDE024EF3D781DA7D`. Obtain it from the M4A1Fix 1.0.1 release, not an arbitrary rebuild. The default sibling-baseline path in the test project is optional: override it as below.
 
 ```cmd
-BUILD.cmd "D:\Games\Risk of Rain 2" "D:\Games\Risk of Rain 2\BepInEx\plugins\M4A1\M4A1Mod.dll" "D:\Games\Risk of Rain 2\BepInEx\core"
+set "M4A1FIX_HOOK_PATH=<full path to your MMHOOK_RoR2.dll>"
+set "M4A1FIX_BASELINE_ARCHIVE=<full path to the frozen 1.0.1 package ZIP>"
+dotnet test tests\M4A1Fix.Tests\M4A1Fix.Tests.csproj -c Release -p:GamePath="%M4A1FIX_GAME_PATH%" -p:M4A1ModPath="%M4A1FIX_M4A1_PATH%" -p:BepInExDllPath="%M4A1FIX_BEPINEX_CORE%\BepInEx.dll" -p:HarmonyDllPath="%M4A1FIX_BEPINEX_CORE%\0Harmony.dll" -p:HookAssemblyPath="%M4A1FIX_HOOK_PATH%" -p:BaselineArchivePath="%M4A1FIX_BASELINE_ARCHIVE%" --settings tests\patch-tests.runsettings
 ```
 
-If the direct-install tree contains the exact supported M4A1 bytes, omitting arguments 2 and 3 is also supported because the script may use the direct-install fallbacks:
+The runsettings selects x86 for the inspected loader. Tests copy external references only to ignored test output. Managed scheduler, rollback, contracts and IL control-flow checks do not execute Unity Addressables or multiplayer.
+
+## Native MSBuild integration tests
+
+Install Python 3 and provide the official hash-verified original DLLs at these ignored relative paths:
+
+- `local-deps/Snoresville-M4A1-1.1.4/M4A1Mod.dll` — SHA-256 `600188D306782F6C1B26EA1BDA4A615BFF9AC4437318873D5728CD58B26A7154`.
+- `local-deps/Snoresville-M4A1-1.1.5/M4A1Mod.dll` — SHA-256 `023B3FE8F86F9DCE8FD9F203BA3580D565A9940D2E0E82AB3FA129EDC33CC6F0`.
 
 ```cmd
-BUILD.cmd "D:\Games\Risk of Rain 2"
+python -m unittest discover -s tests -p test_msbuild.py -v
 ```
 
-## Gale/r2modman selected-profile example
+These tests import real build targets into disposable projects and exercise hash rejection, missing dependencies, staging and Windows file locks. Fixture placeholders are never used as gameplay dependencies.
 
-Select the exact profile yourself and pass its dependency paths explicitly. The game path remains independent from the profile path:
+## Output and rebuild identity
 
-```cmd
-BUILD.cmd "D:\Games\Risk of Rain 2" "D:\ModProfiles\SelectedProfile\BepInEx\plugins\M4A1\M4A1Mod.dll" "D:\ModProfiles\SelectedProfile\BepInEx\core"
-```
-
-You may pass the profile's `BepInEx.dll` instead of its core directory:
-
-```cmd
-BUILD.cmd "D:\Games\Risk of Rain 2" "D:\ModProfiles\SelectedProfile\BepInEx\plugins\M4A1\M4A1Mod.dll" "D:\ModProfiles\SelectedProfile\BepInEx\core\BepInEx.dll"
-```
-
-These paths are examples only. The repository does not hardcode a personal Gale/r2modman profile name or AppData location.
-
-## Environment-variable example
-
-```cmd
-set "M4A1FIX_GAME_PATH=D:\Games\Risk of Rain 2"
-set "M4A1FIX_M4A1_PATH=D:\ModProfiles\SelectedProfile\BepInEx\plugins\M4A1\M4A1Mod.dll"
-set "M4A1FIX_BEPINEX_CORE=D:\ModProfiles\SelectedProfile\BepInEx\core"
-BUILD.cmd
-```
-
-## Dependency verification
-
-Before invoking `dotnet build`, `BUILD.cmd`:
-
-- verifies the selected game managed-assembly tree exists;
-- validates both selected `BepInEx.dll` and sibling `0Harmony.dll`;
-- verifies the exact M4A1Mod SHA-256:
-  `600188D306782F6C1B26EA1BDA4A615BFF9AC4437318873D5728CD58B26A7154`;
-- passes the selected BepInEx and Harmony file paths explicitly to the project.
-
-No game launch or runtime action is performed.
-
-## Expected output
-
-A successful build copies exactly the production assembly to:
-
-```text
-artifacts\M4A1Fix.dll
-```
-
-`artifacts/`, `bin/`, and `obj/` are ignored by Git.
-
-## Direct MSBuild properties
-
-The project uses the pinned compile-only `Microsoft.NETFramework.ReferenceAssemblies.net472` 1.0.3 package and supports these explicit local-reference properties:
-
-- `GamePath`
-- `M4A1ModPath`
-- `BepInExCorePath`
-- `BepInExDllPath`
-- `HarmonyDllPath`
-- `HlapiRuntimePath`
-- `NetworkingAssemblyPath`
-- `NetworkingReferenceName`
-
-Example with explicit file references:
-
-```cmd
-dotnet build src\M4A1Fix\M4A1Fix.csproj -c Release -p:GamePath="D:\Games\Risk of Rain 2" -p:M4A1ModPath="D:\Mods\M4A1Mod.dll" -p:BepInExDllPath="D:\SelectedProfile\BepInEx\core\BepInEx.dll" -p:HarmonyDllPath="D:\SelectedProfile\BepInEx\core\0Harmony.dll"
-```
-
-Expected production assembly: **`M4A1Fix.dll`**.
+Version metadata is 1.1.0 / assembly and file 1.1.0.0. Source/debug paths and toolchains can change the DLL hash on rebuild. Record your own hash separately; a clean-export verification build does not replace the distributed binary. For runtime scenarios, see [testing](docs/TESTING.md).

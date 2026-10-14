@@ -1,0 +1,6 @@
+<RunSettings>
+  <RunConfiguration>
+    <!-- The selected BepInEx 5 DLL has the Required32Bit metadata flag. -->
+    <TargetPlatform>x86</TargetPlatform>
+  </RunConfiguration>
+</RunSettings>

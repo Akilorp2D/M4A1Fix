@@ -1,99 +1,31 @@
 # M4A1Fix
 
-**M4A1Fix** is a small compatibility/fix plugin for the **M4A1** mod in Risk of Rain 2.
+An independent BepInEx patch plugin for Snoresville's M4A1 survivor in Risk of Rain 2.
 
-It fixes an issue in M4A1's death and revival handling where multiple available revival sources could be consumed by a single death.
+## Fixes
 
-The fix is intended for **M4A1Mod 1.1.4**.
+- Revival priority: **Shrine of Shaping → one Dummy Link per death → Dio's Best Friend → final death**. Existing revival implementations retain ownership of consumption and respawn.
+- Dummy AI recovery: reconnect existing Dummy leaders to the revived M4A1 body after Shrine revival, on the authoritative server.
+- First-run preparation: asynchronously prepare original item-display assets before the first run to reduce the pause after pressing Ready.
 
-## What it fixes
-
-In the affected M4A1 version, dying while multiple revival sources were available could cause more than one of them to be consumed at the same time.
-
-For example, if M4A1 had:
-
-- the **Shrine of Shaping** extra-life effect;
-- a **Dummy Link**;
-- a revival item;
-
-a single death could consume multiple revival sources even though only one was needed.
-
-**M4A1Fix** corrects the revival priority and consumption behavior.
-
-Now:
-
-- if the Shrine of Shaping extra life is available, that revival is used;
-- Dummy Link is not consumed at the same time;
-- revival items are not consumed together with it;
-- when Dummy Link is used for revival, other revival items should not be consumed unnecessarily;
-- one death should consume only the revival source that is actually used.
+The original M4A1Mod.dll is never replaced. Original deferred skill hooks remain unchanged; preparation does not guarantee elimination of every loading delay.
 
 ## Compatibility
 
-M4A1Fix 1.0.0 is intended for:
+Version 1.1.0 supports the inspected **M4A1 1.1.5 / Risk of Rain 2 1.5.0#1210*** pair. Exact binary and method contracts fail closed on unknown builds. See [compatibility](docs/COMPATIBILITY.md).
 
-- **Risk of Rain 2**
-- **BepInEx**
-- **M4A1Mod 1.1.4**
-- **M4A1Fix 1.0.0**
-
-This fix was created for M4A1Mod 1.1.4, where the issue described above is present.
-
-A future M4A1 update may change or fix the affected revival behavior. In that case, M4A1Fix may no longer be required or may need an update.
+Single-player testing has confirmed the tested revival fixes and successful preparation before the first run. **Two-PC multiplayer testing is not completed.** Full model/skill regression coverage and precise transition benchmarks remain open.
 
 ## Installation
 
-1. Install **BepInEx**.
-2. Install **M4A1Mod 1.1.4**.
-3. Download the M4A1Fix release archive.
-4. Extract the included `M4A1Fix` folder into:
+Install M4A1 1.1.5 and its dependencies first. With the game closed, copy the manual package's M4A1Fix.dll into `BepInEx/plugins/M4A1Fix/` in your selected installation or mod-manager profile. Keep exactly one active copy. Store backups outside `BepInEx/plugins`.
 
-   `BepInEx\plugins\`
+## Development
 
-The final installation should look like this:
+Read [BUILDING.md](BUILDING.md), [architecture](docs/ARCHITECTURE.md), [how the fixes work](docs/HOW_THE_FIXES_WORK.md), and [testing](docs/TESTING.md).
 
-`BepInEx\plugins\M4A1Fix\M4A1Fix.dll`
-
-5. Start the game normally.
-
-## Testing status
-
-**M4A1Fix 1.0.0** has been tested in single-player.
-
-The corrected death and revival behavior works correctly in the tested scenarios.
-
-### Multiplayer
-
-Dedicated multiplayer runtime testing has not yet been completed for version 1.0.0.
-
-This does not indicate a known multiplayer issue; multiplayer behavior is simply not yet independently validated.
-
-## Source code
-
-The source code for M4A1Fix is public.
-
-This project is a small fix for a specific issue in M4A1, so the code may be studied, modified, or reused under the terms of the MIT License.
-
-If the original M4A1 developer wants to integrate this fix, or parts of it, directly into M4A1, that is fully welcome.
-
-The goal of this project is to fix the issue, not to maintain a competing implementation of the same mechanic.
-
-## Building
-
-The repository contains the source code and files required to build M4A1Fix locally.
-
-See [BUILDING.md](BUILDING.md) for build instructions.
-
-For convenience, the repository also includes `BUILD.cmd` for local builds.
-
-## AI-assisted development
-
-AI tools were used during development to assist with code analysis, implementation support, test workflow organization, and documentation.
-
-Final runtime validation and release decisions were performed by the project owner.
+Target: net472. Production and test sources are included; game/mod/loader binaries are external local dependencies. Builds do not install or publish the mod. No batch build wrapper is required.
 
 ## License
 
-The M4A1Fix source code is licensed under the **MIT License**.
-
-See [LICENSE](LICENSE).
+MIT applies to this patch's source. Third-party binaries and artwork retain their own rights; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
