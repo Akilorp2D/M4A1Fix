@@ -1,3 +1,11 @@
+**Notice: M4A1Fix is no longer needed.**
+
+All fixes have been incorporated into the original M4A1 mod starting with version 1.1.6.
+
+Special thanks to Snoresville, the original M4A1 developer, for taking the time to review and integrate these fixes into the mod!
+
+<img width="515" height="351" alt="chrome_tZy1QRWgDH" src="https://github.com/user-attachments/assets/ec30076d-9db8-4414-bbbc-388cdf51c720" />
+
 # M4A1Fix
 
 An independent BepInEx patch plugin for Snoresville's M4A1 survivor in Risk of Rain 2.
